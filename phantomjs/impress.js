@@ -5,6 +5,7 @@ const
   DEFAULT_TIMEOUT = 15000,
 
   ERROR_EXIT_CODE = 1,
+  PAGE_NOT_FOUND_EXIT_CODE = 2,
   OK_EXIT_CODE = 0
   ;
 
@@ -12,9 +13,9 @@ var
 	system = require('system'),
 	page = require('webpage').create(),
 	url = system.args[1],
-  failRenderMessage = 'FAIL to render the address "' + url + '"',
-  failLoadMessage = 'FAIL to load the address "' + url + '"',
-  errorRenderMessage = 'ERROR to render the address "' + url + '"';
+  failRenderMessage = 'Fail to render the address "' + url + '"',
+  failLoadMessage = 'Fail to load the address "' + url + '"',
+  errorRenderMessage = 'Error to render the address "' + url + '"';
 
 page.settings.userAgent = 'Prerender Rimpress';
 
@@ -67,11 +68,10 @@ try {
 	page.onError = function(message, trace) {
 	  var
       messageBuilder = [
-        'ERROR: ' + message
+        'Error: ' + message
       ];
-
 	  if (trace && trace.length) {
-	    messageBuilder.push('TRACE:');
+	    messageBuilder.push('Trace:');
 	    trace.forEach(function(step) {
 	      messageBuilder.push(
           ' -> '
@@ -96,6 +96,9 @@ try {
       'Error code: ' + resourceError.errorCode + '.',
       'Description: ' + resourceError.errorString
     );
+    if (resourceError.url == url && resourceError.errorCode == 203) {
+      phantom.exit(PAGE_NOT_FOUND_EXIT_CODE);
+    }
   };
 
 }
