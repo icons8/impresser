@@ -18,10 +18,14 @@ var
 
 page.settings.userAgent = 'Prerender Rimpress';
 
+function write() {
+  console.log.apply(console, arguments);
+}
+
 try {
 	page.open(url, function(status) {
 	  if (status !== 'success') {
-	    console.error(failLoadMessage);
+	    write(failLoadMessage);
 	    phantom.exit(ERROR_EXIT_CODE);
 	  }
 	  var
@@ -39,21 +43,21 @@ try {
 		    });
 	  	}
 	  	catch(e) {
-        console.error(failRenderMessage, e);
+        write(failRenderMessage, e);
 	  		phantom.exit(ERROR_EXIT_CODE);
 	  	}
 
 	  	if (ready) {
 	  		clearInterval(checkerIntervalId);
 	  		clearTimeout(timeoutId);
-	  		console.log(htmlRemoveNgClassFilter(htmlRemoveNgAttrsFilter(htmlRemoveScriptTagsFilter(htmlCompressFilter(page.content)))));
+	  		write(htmlRemoveNgClassFilter(htmlRemoveNgAttrsFilter(htmlRemoveScriptTagsFilter(htmlCompressFilter(page.content)))));
 	  		phantom.exit(OK_EXIT_CODE);
 	  	}
 	  }, READY_CHECK_INTERVAL);
 
 	  timeoutId = setTimeout(
       function() {
-        console.error(failRenderMessage, 'Timeout ' + DEFAULT_TIMEOUT);
+        write(failRenderMessage, 'Timeout', DEFAULT_TIMEOUT);
         phantom.exit(ERROR_EXIT_CODE);
       },
       DEFAULT_TIMEOUT
@@ -81,20 +85,22 @@ try {
 	    });
 	  }
 
-	  console.error(errorRenderMessage, messageBuilder.join('\n'));
+	  write(errorRenderMessage, messageBuilder.join('\n'));
 	};
 
   page.onResourceError = function(resourceError) {
-    console.error(
+    write(
       errorRenderMessage,
-      'Unable to load resource (#' + resourceError.id + ' URL:' + resourceError.url + ')',
-      'Error code: ' + resourceError.errorCode + '. Description: ' + resourceError.errorString
+      'Unable to load resource (#' + resourceError.id,
+      'URL:' + resourceError.url + ')',
+      'Error code: ' + resourceError.errorCode + '.',
+      'Description: ' + resourceError.errorString
     );
   };
 
 }
 catch(e) {
-	console.error(e);
+	write(e);
 	phantom.exit(ERROR_EXIT_CODE);
 }
 
@@ -109,7 +115,7 @@ function htmlRemoveScriptTagsFilter(content) {
 
 function htmlRemoveNgAttrsFilter(content) {
 	return content
-		.replace(/\s(?:data-)?ng[:-]?[\w-]+=("[^"]+"|'[^']+'|\S+)/gi, '')
+		.replace(/\s(?:data-)?ng[:-]?[\w-]+=(?:"[^"]+"|'[^']+'|\S+)/gi, '')
 }
 
 function htmlRemoveNgClassFilter(content) {

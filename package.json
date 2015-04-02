@@ -11,6 +11,7 @@
   "dependencies": {
     "yargs": "3.6.0",
     "connect": "3.3.5",
-    "response-time": "2.3.0"
+    "response-time": "2.3.0",
+    "qs": "2.4.1"
   }
 }
