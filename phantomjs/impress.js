@@ -1,19 +1,33 @@
+#! binary/phantomjs
+
+const
+  READY_CHECK_INTERVAL = 50,
+  DEFAULT_TIMEOUT = 10000,
+
+  ERROR_EXIT_CODE = 1,
+  OK_EXIT_CODE = 0
+  ;
+
 var
 	system = require('system'),
 	page = require('webpage').create(),
-	url = system.args[1];
+	url = system.args[1],
+  failRenderMessage = 'FAIL to render the address "' + url + '"',
+  failLoadMessage = 'FAIL to load the address "' + url + '"',
+  errorRenderMessage = 'ERROR to render the address "' + url + '"';
 
 page.settings.userAgent = 'Prerender Rimpress';
 
 try {
 	page.open(url, function(status) {
 	  if (status !== 'success') {
-	    console.warn('FAIL to load the address');
-	    phantom.exit(3);
+	    console.error(failLoadMessage);
+	    phantom.exit(ERROR_EXIT_CODE);
 	  }
 	  var
 	  	checkerIntervalId,
-	  	timeoutId;
+	  	timeoutId
+    ;
 
 	  checkerIntervalId = setInterval(function() {
 	  	var
@@ -25,62 +39,90 @@ try {
 		    });
 	  	}
 	  	catch(e) {
-	  		console.error(e);
-	  		phantom.exit(5);
+        console.error(failRenderMessage, e);
+	  		phantom.exit(ERROR_EXIT_CODE);
 	  	}
 
 	  	if (ready) {
 	  		clearInterval(checkerIntervalId);
 	  		clearTimeout(timeoutId);
-	  		console.log(compressHtmlFilter(removeNgAttrsFilter(removeScriptTagsFilter(page.content))));
-	  		phantom.exit();
+	  		console.log(htmlRemoveNgClassFilter(htmlRemoveNgAttrsFilter(htmlRemoveScriptTagsFilter(htmlCompressFilter(page.content)))));
+	  		phantom.exit(OK_EXIT_CODE);
 	  	}
-	  }, 200);
+	  }, READY_CHECK_INTERVAL);
 
-	  timeoutId = setTimeout(function() {
-	  	console.error('Timeout');
-	  	phantom.exit(4);
-	  }, 10000);
+	  timeoutId = setTimeout(
+      function() {
+        console.error(failRenderMessage, 'Timeout ' + DEFAULT_TIMEOUT);
+        phantom.exit(ERROR_EXIT_CODE);
+      },
+      DEFAULT_TIMEOUT
+    );
 	});
 
-	page.onError = function(msg, trace) {
-	  var stack = ['ERROR: ' + msg];
+	page.onError = function(message, trace) {
+	  var
+      messageBuilder = [
+        'ERROR: ' + message
+      ];
+
 	  if (trace && trace.length) {
-	    stack.push('TRACE:');
-	    trace.forEach(function(t) {
-	      stack.push(' -> ' + t.file + ': ' + t.line + (t.function ? ' (in function "' + t.function +'")' : ''));
+	    messageBuilder.push('TRACE:');
+	    trace.forEach(function(step) {
+	      messageBuilder.push(
+          ' -> '
+          + step.file
+          + ': '
+          + step.line
+          + (step.function
+            ? ' (in function "' + step.function + '")'
+            : '')
+        );
 	    });
 	  }
-	  console.error(stack.join('\n'));
-	  phantom.exit(10);
+
+	  console.error(errorRenderMessage, messageBuilder.join('\n'));
 	};
+
+  page.onResourceError = function(resourceError) {
+    console.error(
+      errorRenderMessage,
+      'Unable to load resource (#' + resourceError.id + ' URL:' + resourceError.url + ')',
+      'Error code: ' + resourceError.errorCode + '. Description: ' + resourceError.errorString
+    );
+  };
 
 }
 catch(e) {
 	console.error(e);
-	phantom.exit(2);
+	phantom.exit(ERROR_EXIT_CODE);
 }
 
-function removeNgAttrsFilter(content) {
+function htmlRemoveScriptTagsFilter(content) {
+  return content
+    .replace(/<script(.*?)>[\S\s]*?<\/script\s*>/gi, function(match, script) {
+      return script.indexOf('application/ld+json') != -1
+        ? match
+        : ''
+    });
+}
+
+function htmlRemoveNgAttrsFilter(content) {
 	return content
 		.replace(/\s(?:data-)?ng[:-]?[\w-]+=("[^"]+"|'[^']+'|\S+)/gi, '')
 }
 
-function removeScriptTagsFilter(content) {
-	return content
-		.replace(/<script(.*?)>[\S\s]*?<\/script>/gi, function(match, script) {
-			return script.indexOf('application/ld+json') != -1
-				? match
-				: ''
-		});
+function htmlRemoveNgClassFilter(content) {
+  return content
+    .replace(/([\s'"=])ng-(?:(?:isolate-)?scope|binding)/gi, '$1')
 }
 
-function compressHtmlFilter(content) {
+function htmlCompressFilter(content) {
 	return content
-		.replace(/<!--[^>]*-->/g, '') // comments
-    // .replace(/>\s+</g, '><') // spaces between tags
-    // .replace(/>\s\s+/g, '> ') // spaces after tags
-    // .replace(/\s\s+</g, ' <')
+		.replace(/<!--.*?-->/g, '')
+    .replace(/>\s+</g, '><')
+    .replace(/>\s\s+/g, '> ')
+    .replace(/\s\s+</g, ' <')
     ;
 }
 
