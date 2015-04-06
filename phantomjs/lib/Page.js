@@ -20,6 +20,8 @@ function Page(url) {
 
   this._create();
 
+  this._finished = false;
+
   this.url = url;
 
   this._outputBuffer = [];
@@ -37,7 +39,7 @@ inherit(Page, EventEmitter, {
 
   _exit: function(eventName) {
     this.stop();
-    this.emit(eventName, this.getResult());
+    this.emit(eventName, this);
   },
   _exitOk: function() {
     this._exit('Ok');
@@ -209,6 +211,10 @@ inherit(Page, EventEmitter, {
       resourcesPending,
       cancelReadyDelayTimeout = true;
 
+    if (this._finished) {
+      return;
+    }
+
     if (!this._hasReadyFlag()) {
       if (this._pageWindowLoaded) {
         resourcesPending = false;
@@ -277,6 +283,10 @@ inherit(Page, EventEmitter, {
   },
 
   _success: function() {
+    if (this._finished) {
+      return;
+    }
+    this._finished = true;
     this._output(new HtmlSanitizer(this.page.content).getContent());
     this._exitOk();
   },
@@ -308,6 +318,7 @@ inherit(Page, EventEmitter, {
   },
 
   stop: function() {
+    this._finished = true;
     this._cancelReadyCheckDelayTimeout();
     this._cancelTimeout();
     this._stopReadyFlagChecker();

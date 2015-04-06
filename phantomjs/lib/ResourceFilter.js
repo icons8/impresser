@@ -27,6 +27,7 @@ ResourceFilter.prototype = {
     this._addEthnioRule();
     this._addGoogleAnalyticsRule();
     this._addFontRule();
+    this._addDisqusRule();
   },
 
   _addYandexMetricaRule: function() {
@@ -37,7 +38,7 @@ ResourceFilter.prototype = {
 
   _addEthnioRule: function() {
     this.rules.push(function(url) {
-      return !/^(https?:\/\/)?(www)?ethn\.io/i.test(url);
+      return !/^(https?:\/\/)?(www)?ethn\.io([?/]|$)/i.test(url);
     });
   },
 
@@ -50,6 +51,12 @@ ResourceFilter.prototype = {
   _addFontRule: function() {
     this.rules.push(function(url) {
       return !/^(https?:\/\/)?(www)?[^?]+?\.(ttf|eot|woff|woff2)([?/]|$)/i.test(url);
+    });
+  },
+
+  _addDisqusRule: function() {
+    this.rules.push(function(url) {
+      return !/^(https?:\/\/)?(www)?[^/]+?(disquscdn|disqus)\.([a-z]{2,4})([?/]|$)/i.test(url);
     });
   }
 
