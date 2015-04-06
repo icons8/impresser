@@ -3,10 +3,14 @@
 var
 	system = require('system'),
   Application = require('./lib/Application'),
-  args = system.args,
-	url = args[1];
+  minimist = require('../node_modules/minimist'),
+	url,
+  argv;
 
-if (args.indexOf('--url-base64-encoded') != -1) {
+argv = minimist(system.args);
+url = argv['_'][1];
+
+if (argv['url-base64-encoded']) {
   try {
     url = window.atob(url);
   }

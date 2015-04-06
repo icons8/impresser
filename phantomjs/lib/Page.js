@@ -228,7 +228,7 @@ inherit(Page, EventEmitter, {
           cancelReadyDelayTimeout = false;
           if (!self._readyCheckDelayTimeoutId) {
             self._readyCheckDelayTimeoutId = setTimeout(function() {
-              if (!self._getReadyFlag()) {
+              if (!self._hasReadyFlag()) {
                 self._warning('WARNING: Prerender or rimpress ready flags not defined');
                 self._success();
               }
