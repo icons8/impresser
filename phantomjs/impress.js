@@ -1,138 +1,19 @@
 #! binary/phantomjs
 
-const
-  READY_CHECK_INTERVAL = 50,
-  DEFAULT_TIMEOUT = 15000,
-
-  ERROR_EXIT_CODE = 1,
-  PAGE_NOT_FOUND_EXIT_CODE = 2,
-  OK_EXIT_CODE = 0
-  ;
-
 var
 	system = require('system'),
-	page = require('webpage').create(),
-	url = system.args[1],
-  failRenderMessage = 'Fail to render the address "' + url + '"',
-  failLoadMessage = 'Fail to load the address "' + url + '"',
-  errorRenderMessage = 'Error to render the address "' + url + '"';
+  Application = require('./lib/Application'),
+  args = system.args,
+	url = args[1];
 
-page.settings.userAgent = 'Prerender Rimpress';
-
-function write() {
-  console.log.apply(console, arguments);
+if (args.indexOf('--url-base64-encoded') != -1) {
+  try {
+    url = window.atob(url);
+  }
+  catch(e) {
+    console.log('Incorrect base64 formatted url', e);
+    phantom.exit(1);
+  }
 }
 
-try {
-	page.open(url, function(status) {
-	  if (status !== 'success') {
-	    write(failLoadMessage);
-	    phantom.exit(ERROR_EXIT_CODE);
-	  }
-	  var
-	  	checkerIntervalId,
-	  	timeoutId
-    ;
-
-	  checkerIntervalId = setInterval(function() {
-	  	var
-	  		ready;
-
-	  	try {
-	  		ready = page.evaluate(function() {
-		      return window.prerenderReady;
-		    });
-	  	}
-	  	catch(e) {
-        write(failRenderMessage, e);
-	  		phantom.exit(ERROR_EXIT_CODE);
-	  	}
-
-	  	if (ready) {
-	  		clearInterval(checkerIntervalId);
-	  		clearTimeout(timeoutId);
-	  		write(htmlRemoveNgClassFilter(htmlRemoveNgAttrsFilter(htmlRemoveScriptTagsFilter(htmlCompressFilter(page.content)))));
-	  		phantom.exit(OK_EXIT_CODE);
-	  	}
-	  }, READY_CHECK_INTERVAL);
-
-	  timeoutId = setTimeout(
-      function() {
-        write(failRenderMessage, 'Timeout', DEFAULT_TIMEOUT);
-        phantom.exit(ERROR_EXIT_CODE);
-      },
-      DEFAULT_TIMEOUT
-    );
-	});
-
-	page.onError = function(message, trace) {
-	  var
-      messageBuilder = [
-        'Error: ' + message
-      ];
-	  if (trace && trace.length) {
-	    messageBuilder.push('Trace:');
-	    trace.forEach(function(step) {
-	      messageBuilder.push(
-          ' -> '
-          + step.file
-          + ': '
-          + step.line
-          + (step.function
-            ? ' (in function "' + step.function + '")'
-            : '')
-        );
-	    });
-	  }
-
-	  write(errorRenderMessage, messageBuilder.join('\n'));
-	};
-
-  page.onResourceError = function(resourceError) {
-    write(
-      errorRenderMessage,
-      'Unable to load resource (#' + resourceError.id,
-      'URL:' + resourceError.url + ')',
-      'Error code: ' + resourceError.errorCode + '.',
-      'Description: ' + resourceError.errorString
-    );
-    if (resourceError.url == url && resourceError.errorCode == 203) {
-      phantom.exit(PAGE_NOT_FOUND_EXIT_CODE);
-    }
-  };
-
-}
-catch(e) {
-	write(e);
-	phantom.exit(ERROR_EXIT_CODE);
-}
-
-function htmlRemoveScriptTagsFilter(content) {
-  return content
-    .replace(/<script(.*?)>[\S\s]*?<\/script\s*>/gi, function(match, script) {
-      return script.indexOf('application/ld+json') != -1
-        ? match
-        : ''
-    });
-}
-
-function htmlRemoveNgAttrsFilter(content) {
-	return content
-		.replace(/\s(?:data-)?ng[:-]?[\w-]+=(?:"[^"]+"|'[^']+'|\S+)/gi, '')
-}
-
-function htmlRemoveNgClassFilter(content) {
-  return content
-    .replace(/([\s'"=])ng-(?:(?:isolate-)?scope|binding)/gi, '$1')
-}
-
-function htmlCompressFilter(content) {
-	return content
-		.replace(/<!--.*?-->/g, '')
-    .replace(/>\s+</g, '><')
-    .replace(/>\s\s+/g, '> ')
-    .replace(/\s\s+</g, ' <')
-    ;
-}
-
-
+new Application(url).run();
