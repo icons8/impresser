@@ -1,3 +1,3 @@
 # phantomjs binary folder
 
-Copy phantomjs binary file here
+Put phantomjs binary file here

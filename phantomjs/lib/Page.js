@@ -6,7 +6,7 @@ const
 
 var
   EventEmitter = require('./EventEmitter'),
-  HtmlSanitizer = require('./HtmlSanitizer'),
+  HtmlSanitizeFilter = require('./HtmlSanitizeFilter'),
   ResourceFilter = require('./ResourceFilter'),
   inherit = require('./inherit'),
   webPage = require('webpage')
@@ -18,7 +18,7 @@ module.exports = Page;
 function Page(url) {
   EventEmitter.call(this);
 
-  this._create();
+  this._init();
 
   this._finished = false;
 
@@ -63,7 +63,12 @@ inherit(Page, EventEmitter, {
     this._warningBuffer.push(args.join(' '));
   },
 
-  _create: function() {
+  _init: function() {
+    this._webPageInit();
+    this.resourceFilter = new ResourceFilter();
+  },
+
+  _webPageInit: function() {
     this.page = webPage.create();
     this._webPageConfigure();
     this._webPageInitListeners();
@@ -146,7 +151,10 @@ inherit(Page, EventEmitter, {
       self = this;
 
     this.page.onResourceRequested = function(requestData, networkRequest) {
-      if (! new ResourceFilter().check(requestData.url) ) {
+      var
+        url = self.url;
+
+      if ( (!self.resourceFilter.check(requestData.url)) && requestData.url != url ) {
         self._abortedResources.push(requestData.id);
         networkRequest.abort();
       }
@@ -154,6 +162,7 @@ inherit(Page, EventEmitter, {
         self._resourceResponses[requestData.id] = null;
         self._pageReadyCheck();
       }
+
     };
   },
 
@@ -287,7 +296,7 @@ inherit(Page, EventEmitter, {
       return;
     }
     this._finished = true;
-    this._output(new HtmlSanitizer(this.page.content).getContent());
+    this._output(new HtmlSanitizeFilter(this.page.content).getContent());
     this._exitOk();
   },
 
@@ -349,19 +358,30 @@ inherit(Page, EventEmitter, {
   getResult: function() {
     var
       content = this._outputBuffer.join('\n'),
+      warningBlockBuilder,
       position;
 
     if (this._warningBuffer.length) {
       if (/^\s*(<html|<!doctype)/i.test(content)) {
-        position = content.lastIndexOf('</html');
+        position = content.lastIndexOf('</body');
         if (position != -1) {
+          warningBlockBuilder = [
+            '<script>',
+            'window.__RIMPRESS_REPORT=',
+            JSON.stringify({
+              url: this.url,
+              warnings: this._warningBuffer
+            }),
+            '</script>'
+          ];
+
           return content.slice(0, position)
-            + '<!-- IMPRESS WARNINGS: \n' + this._warningBuffer.join('\n\n') + '\n -->'
+            + warningBlockBuilder.join('')
             + content.slice(position);
         }
       }
       else {
-        return content + '\n' + this._warningBuffer.join('\n');
+        return content + '\nRIMPRESS WARNINGS FOR "' + this.url + '":\n' + this._warningBuffer.join('\n');
       }
     }
 

@@ -8,9 +8,9 @@ var
 
   argv = yargs
     .usage('Usage: $0 [options]')
-    .describe('base-url', 'Base url for all proxies addresses by default http://icons8.com')
-    .describe('frontend', 'Use impress as frontend server by default false').boolean('frontend')
-    .describe('proxy', 'Use proxy server for resources and not GET requests by default false').boolean('proxy')
+    .describe('base-url', 'Base url for proxy addresses by default http://icons8.com')
+    .describe('frontend', 'Use impress as frontend server by default true')
+    .describe('proxy', 'Use proxy server for resources and not GET requests by default true')
     .describe('server-port', 'Port of impress server by default 8497')
     .describe('pool-max-size', 'Limit of parallel impress instances, by default 3 on each CPU cores')
     .describe('queue-max-size', 'Limit of impress queue, by default 50 * "Limit of parallel impress instances.')

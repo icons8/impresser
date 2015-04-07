@@ -55,7 +55,7 @@ Application.prototype = {
 
   send: function(result) {
     result = result || '';
-    console.log(result);
+    //console.log(result);
   },
 
   run: function() {

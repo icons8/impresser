@@ -1,9 +1,15 @@
+var
+  fs = require('fs');
 
 module.exports = ResourceFilter;
 
-function ResourceFilter() {
+function ResourceFilter(options) {
+  this.options = options || {};
+
   this.rules = [];
-  this._addCommonFilters();
+  this.blockedResourcesConfig = phantom.libraryPath + '/' + (this.options.blockedResourcesConfig || 'config/blocked-resources.json');
+
+  this._addRules();
 }
 
 ResourceFilter.prototype = {
@@ -22,41 +28,50 @@ ResourceFilter.prototype = {
     return true;
   },
 
-  _addCommonFilters: function() {
-    this._addYandexMetricaRule();
-    this._addEthnioRule();
-    this._addGoogleAnalyticsRule();
+  _addRules: function() {
     this._addFontRule();
-    this._addDisqusRule();
+    this._addBlockedResourcesRules();
   },
 
-  _addYandexMetricaRule: function() {
-    this.rules.push(function(url) {
-      return !/^(https?:\/\/)?(www)?mc\.yandex\.([a-z]{2,4})/i.test(url);
-    });
-  },
+  _addBlockedResourcesRules: function() {
+    var
+      resourcesListJson = '',
+      resourcesList,
+      stream;
 
-  _addEthnioRule: function() {
-    this.rules.push(function(url) {
-      return !/^(https?:\/\/)?(www)?ethn\.io([?/]|$)/i.test(url);
-    });
-  },
+    stream = fs.open(this.blockedResourcesConfig, 'r');
+    while(!stream.atEnd()) {
+      resourcesListJson += stream.readLine();
+    }
+    resourcesList = JSON.parse(resourcesListJson);
 
-  _addGoogleAnalyticsRule: function() {
     this.rules.push(function(url) {
-      return !/^(https?:\/\/)?(www)?stats\.g\./i.test(url);
+      var
+        match,
+        _url,
+        index,
+        res;
+
+      match = url.match(/^(?:https?:\/\/)?(?:www\.)?(.*)$/i);
+      if (!match) {
+        return true;
+      }
+      _url = match[1];
+
+      for (index = 0; index < resourcesList.length; index++) {
+        res = resourcesList[index];
+        if (_url.slice(0, res.length) == res) {
+          return false;
+        }
+      }
+
+      return true;
     });
   },
 
   _addFontRule: function() {
     this.rules.push(function(url) {
       return !/^(https?:\/\/)?(www)?[^?]+?\.(ttf|eot|woff|woff2)([?/]|$)/i.test(url);
-    });
-  },
-
-  _addDisqusRule: function() {
-    this.rules.push(function(url) {
-      return !/^(https?:\/\/)?(www)?[^/]+?(disquscdn|disqus)\.([a-z]{2,4})([?/]|$)/i.test(url);
     });
   }
 
