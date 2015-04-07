@@ -72,6 +72,9 @@ HtmlAngularFilter.prototype = {
       },
       ignore: function(text) {
         content += text;
+      },
+      doctype: function(doctype) {
+        content += doctype;
       }
     });
 

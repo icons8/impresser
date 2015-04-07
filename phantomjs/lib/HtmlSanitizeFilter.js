@@ -46,8 +46,7 @@ HtmlSanitizeFilter.prototype = {
       removeRedundantAttributes: true,
       removeStyleLinkTypeAttributes: true,
       keepClosingSlash: true,
-      caseSensitive: true,
-      useShortDoctype: true
+      caseSensitive: true
     })
   },
 

@@ -38,8 +38,12 @@ function Page(url) {
 inherit(Page, EventEmitter, {
 
   _exit: function(eventName) {
+    var
+      finished = this._finished;
     this.stop();
-    this.emit(eventName, this);
+    if (!finished) {
+      this.emit(eventName, this.getResult());
+    }
   },
   _exitOk: function() {
     this._exit('Ok');
@@ -295,9 +299,19 @@ inherit(Page, EventEmitter, {
     if (this._finished) {
       return;
     }
-    this._finished = true;
-    this._output(new HtmlSanitizeFilter(this.page.content).getContent());
+    this._output(this._getPageContent());
     this._exitOk();
+  },
+
+  _getPageContent: function() {
+    try {
+      return new HtmlSanitizeFilter(this.page.content).getContent();
+    }
+    catch(e) {
+      this._output('Could not get page content', e);
+      this._exitError();
+    }
+    return null;
   },
 
   _getReadyFlag: function() {

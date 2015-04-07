@@ -32,18 +32,18 @@ Application.prototype = {
       self = this,
       page = this.page;
 
-    page.on('Ok', function() {
-      self.send(page.getResult());
+    page.on('Ok', function(result) {
+      self.send(result);
       self.exit(Application.EXIT_CODE.OK);
     });
 
-    page.on('Error', function() {
-      self.send(page.getResult());
+    page.on('Error', function(result) {
+      self.send(result);
       self.exit(Application.EXIT_CODE.ERROR);
     });
 
-    page.on('PageNotFound', function() {
-      self.send(page.getResult());
+    page.on('PageNotFound', function(result) {
+      self.send(result);
       self.exit(Application.EXIT_CODE.PAGE_NOT_FOUND);
     });
 
@@ -55,7 +55,7 @@ Application.prototype = {
 
   send: function(result) {
     result = result || '';
-    //console.log(result);
+    console.log(result);
   },
 
   run: function() {
