@@ -85,7 +85,7 @@ inherit(Page, EventEmitter, {
   },
 
   _webPageConfigure: function() {
-    this.page.settings.userAgent = 'Prerender Rimpress';
+    this.page.settings.userAgent = 'Prerender Impress';
     this.page.settings.loadImages = false;
   },
 
@@ -260,7 +260,7 @@ inherit(Page, EventEmitter, {
           if (!self._readyCheckDelayTimeoutId) {
             self._readyCheckDelayTimeoutId = setTimeout(function() {
               if (!self._hasReadyFlag()) {
-                self._warning('WARNING: Prerender or rimpress ready flags not defined');
+                self._warning('WARNING: Prerender or impress ready flags not defined');
                 self._success();
               }
             }, AUTO_READY_CHECK_DELAY)
@@ -352,11 +352,11 @@ inherit(Page, EventEmitter, {
   _getReadyFlag: function() {
     try {
       return this.page.evaluate(function() {
-        return window.prerenderReady || window.rimpressReady;
+        return window.prerenderReady || window.impressReady;
       });
     }
     catch(e) {
-      this._output('Could not get prerender or rimpress ready flags value from page', e);
+      this._output('Could not get prerender or impress ready flags value from page', e);
       this._exitError();
     }
     return null;
@@ -365,11 +365,11 @@ inherit(Page, EventEmitter, {
   _hasReadyFlag: function() {
     try {
       return this.page.evaluate(function() {
-        return typeof window.prerenderReady != 'undefined' || typeof window.rimpressReady != 'undefined';
+        return typeof window.prerenderReady != 'undefined' || typeof window.impressReady != 'undefined';
       });
     }
     catch(e) {
-      this._output('Could not get prerender or rimpress ready flags information from page', e);
+      this._output('Could not get prerender or impress ready flags information from page', e);
       this._exitError();
     }
     return null;
@@ -416,7 +416,7 @@ inherit(Page, EventEmitter, {
         if (position != -1) {
           warningBlockBuilder = [
             '<script>',
-            'window.__RIMPRESS_REPORT=',
+            'window.__IMPRESS_REPORT=',
             JSON.stringify({
               url: this.url,
               warnings: this._warningBuffer,
@@ -432,7 +432,7 @@ inherit(Page, EventEmitter, {
       }
       else {
         return content + '\n'
-          + 'RIMPRESS REPORT FOR "' + this.url + '"\n'
+          + 'IMPRESS REPORT FOR "' + this.url + '"\n'
           + (this._warningBuffer.length ? 'WARNINGS:\n' + this._warningBuffer.join('\n') + '\n' : '' )
           + (this._noticeBuffer.length ? 'NOTICES:\n' + this._noticeBuffer.join('\n') + '\n' : '' );
       }

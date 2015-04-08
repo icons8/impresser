@@ -2,6 +2,6 @@
 
 Add phantomjs binary to ./phantomjs/binary/.
 
-Run ./bin/rimpress.js in command line.
+Run ./bin/impress.js in command line.
 
 Enjoy.

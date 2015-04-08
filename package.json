@@ -1,8 +1,8 @@
 {
-  "name": "rimpress",
+  "name": "impress",
   "version": "0.1.0",
   "repository": {
-    "url": "https://github.com/icons8/rimpress"
+    "url": "https://github.com/icons8/impress"
   },
   "license": "MIT",
   "engines": {
