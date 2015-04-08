@@ -14,8 +14,12 @@ var
 
 module.exports = Page;
 
-function Page(url) {
+function Page(url, options) {
   EventEmitter.call(this);
+
+  options = options || {};
+  this.reportNotices = options.reportNotices;
+  this.report = typeof options.report == 'undefined' || options.report;
 
   this._init();
 
@@ -212,10 +216,12 @@ inherit(Page, EventEmitter, {
     var
       self = this;
 
-    this.page.onConsoleMessage = function(msg, lineNum, sourceId) {
+    this.page.onConsoleMessage = function(message, line, sourceId) {
       self._notice(
-        'CONSOLE:', msg,
-        '(from line #' + lineNum + ' in "' + sourceId + '")'
+        'CONSOLE: ' + message +
+        (line || line === 0 || sourceId
+          ? ' (from line #' + line + ' in "' + sourceId + '")'
+          : '')
       );
     };
   },
@@ -415,13 +421,14 @@ inherit(Page, EventEmitter, {
         position = content.lastIndexOf('</body');
         if (position != -1) {
           warningBlockBuilder = [
-            '<script>',
-            'window.__IMPRESS_REPORT=',
+            '<script type="application/impress-report+json">',
+            '<![CDATA[',
             JSON.stringify({
               url: this.url,
               warnings: this._warningBuffer,
-              notices: this._noticeBuffer
+              notices: (this.reportNotices && this._noticeBuffer) || undefined
             }),
+            ']]>',
             '</script>'
           ];
 
@@ -434,7 +441,7 @@ inherit(Page, EventEmitter, {
         return content + '\n'
           + 'IMPRESS REPORT FOR "' + this.url + '"\n'
           + (this._warningBuffer.length ? 'WARNINGS:\n' + this._warningBuffer.join('\n') + '\n' : '' )
-          + (this._noticeBuffer.length ? 'NOTICES:\n' + this._noticeBuffer.join('\n') + '\n' : '' );
+          + (this.reportNotices && this._noticeBuffer.length ? 'NOTICES:\n' + this._noticeBuffer.join('\n') + '\n' : '' );
       }
     }
 

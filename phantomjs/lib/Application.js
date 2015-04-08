@@ -9,8 +9,9 @@ var
 
 module.exports = Application;
 
-function Application(url) {
-  this.url = url || '';
+function Application(options) {
+  this.options = options || {};
+  this.url = this.options.url || '';
   this._init();
 }
 
@@ -23,7 +24,7 @@ Application.EXIT_CODE = {
 Application.prototype = {
 
   _init: function() {
-    this.page = new Page(this.url);
+    this.page = new Page(this.url, this.options);
     this._initPageListeners();
   },
 

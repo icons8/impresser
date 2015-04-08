@@ -4,15 +4,16 @@ var
 	system = require('system'),
   Application = require('./lib/Application'),
   minimist = require('../node_modules/minimist'),
-	url,
-  argv;
+  argv,
+  options = {};
 
 argv = minimist(system.args);
-url = argv['_'][1];
+
+options.url = argv['_'][1];
 
 if (argv['url-base64-encoded']) {
   try {
-    url = window.atob(url);
+    options.url = window.atob(options.url);
   }
   catch(e) {
     console.log('Incorrect base64 formatted url', e);
@@ -20,4 +21,6 @@ if (argv['url-base64-encoded']) {
   }
 }
 
-new Application(url).run();
+options.reportNotices = argv['report-notices'];
+
+new Application(options).run();
