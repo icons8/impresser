@@ -12,7 +12,6 @@ var
   webPage = require('webpage')
   ;
 
-
 module.exports = Page;
 
 function Page(url) {
@@ -26,6 +25,7 @@ function Page(url) {
 
   this._outputBuffer = [];
   this._warningBuffer = [];
+  this._noticeBuffer = [];
 
   this._pageWindowLoaded = false;
 
@@ -67,6 +67,12 @@ inherit(Page, EventEmitter, {
     this._warningBuffer.push(args.join(' '));
   },
 
+  _notice: function(/* ...values*/) {
+    var
+      args = Array.prototype.slice.call(arguments);
+    this._noticeBuffer.push(args.join(' '));
+  },
+
   _init: function() {
     this._webPageInit();
     this.resourceFilter = new ResourceFilter();
@@ -90,6 +96,7 @@ inherit(Page, EventEmitter, {
     this._webPageAddResourceReceivedListener();
     this._webPageAddInitializedListener();
     this._webPageAddCallbackListener();
+    this._webPageAddConsoleMessageListener();
   },
 
   _webPageAddErrorListener: function() {
@@ -166,7 +173,6 @@ inherit(Page, EventEmitter, {
         self._resourceResponses[requestData.id] = null;
         self._pageReadyCheck();
       }
-
     };
   },
 
@@ -199,6 +205,18 @@ inherit(Page, EventEmitter, {
         self._pageWindowLoaded = true;
         self._pageReadyCheck();
       }
+    };
+  },
+
+  _webPageAddConsoleMessageListener: function() {
+    var
+      self = this;
+
+    this.page.onConsoleMessage = function(msg, lineNum, sourceId) {
+      self._notice(
+        'CONSOLE:', msg,
+        '(from line #' + lineNum + ' in "' + sourceId + '")'
+      );
     };
   },
 
@@ -269,7 +287,24 @@ inherit(Page, EventEmitter, {
       self = this;
     this._timeoutId = setTimeout(
       function() {
-        self._output('Timeout', self._timeout);
+        var
+          resourceResponses = self._resourceResponses,
+          pendingResourcesCount
+          ;
+
+        pendingResourcesCount = Object.keys(resourceResponses)
+          .filter(function(key) {
+            return !resourceResponses[key];
+          })
+          .length;
+
+        self._output(
+          'TIMEOUT:', self._timeout,
+          'Has ready flag:', self._hasReadyFlag(),
+          'Ready flag value:', Boolean(self._getReadyFlag()),
+          'Page window loaded:', self._pageWindowLoaded,
+          'Pending resource count:', pendingResourcesCount
+        );
         self._exitError();
       },
       self._timeout
@@ -375,7 +410,7 @@ inherit(Page, EventEmitter, {
       warningBlockBuilder,
       position;
 
-    if (this._warningBuffer.length) {
+    if (this._warningBuffer.length || this._noticeBuffer.length) {
       if (/^\s*(<html|<!doctype)/i.test(content)) {
         position = content.lastIndexOf('</body');
         if (position != -1) {
@@ -384,7 +419,8 @@ inherit(Page, EventEmitter, {
             'window.__RIMPRESS_REPORT=',
             JSON.stringify({
               url: this.url,
-              warnings: this._warningBuffer
+              warnings: this._warningBuffer,
+              notices: this._noticeBuffer
             }),
             '</script>'
           ];
@@ -395,7 +431,10 @@ inherit(Page, EventEmitter, {
         }
       }
       else {
-        return content + '\nRIMPRESS WARNINGS FOR "' + this.url + '":\n' + this._warningBuffer.join('\n');
+        return content + '\n'
+          + 'RIMPRESS REPORT FOR "' + this.url + '"\n'
+          + (this._warningBuffer.length ? 'WARNINGS:\n' + this._warningBuffer.join('\n') + '\n' : '' )
+          + (this._noticeBuffer.length ? 'NOTICES:\n' + this._noticeBuffer.join('\n') + '\n' : '' );
       }
     }
 

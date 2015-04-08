@@ -16,7 +16,7 @@ if (argv['url-base64-encoded']) {
   }
   catch(e) {
     console.log('Incorrect base64 formatted url', e);
-    phantom.exit(1);
+    phantom.exit(10);
   }
 }
 
