@@ -1,7 +1,5 @@
 const
-  OK_EXIT_CODE = 0,
-  ERROR_EXIT_CODE = 1,
-  PAGE_NOT_FOUND_EXIT_CODE = 2
+  OK_EXIT_CODE = 0
   ;
 
 var
@@ -15,12 +13,6 @@ function Application(options) {
   this._init();
 }
 
-Application.EXIT_CODE = {
-  OK: OK_EXIT_CODE,
-  ERROR: ERROR_EXIT_CODE,
-  PAGE_NOT_FOUND: PAGE_NOT_FOUND_EXIT_CODE
-};
-
 Application.prototype = {
 
   _init: function() {
@@ -33,19 +25,9 @@ Application.prototype = {
       self = this,
       page = this.page;
 
-    page.on('Ok', function(result) {
+    page.on('exit', function(result) {
       self.send(result);
-      self.exit(Application.EXIT_CODE.OK);
-    });
-
-    page.on('Error', function(result) {
-      self.send(result);
-      self.exit(Application.EXIT_CODE.ERROR);
-    });
-
-    page.on('PageNotFound', function(result) {
-      self.send(result);
-      self.exit(Application.EXIT_CODE.PAGE_NOT_FOUND);
+      self.exit(OK_EXIT_CODE);
     });
 
   },
@@ -55,8 +37,7 @@ Application.prototype = {
   },
 
   send: function(result) {
-    result = result || '';
-    console.log(result);
+    console.log(JSON.stringify(result));
   },
 
   run: function() {

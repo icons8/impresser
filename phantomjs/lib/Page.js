@@ -6,7 +6,7 @@ const
 
 var
   EventEmitter = require('./EventEmitter'),
-  HtmlSanitizeFilter = require('./HtmlSanitizeFilter'),
+  PageContentPerformer = require('./PageContentPerformer'),
   ResourceFilter = require('./ResourceFilter'),
   inherit = require('./inherit'),
   webPage = require('webpage')
@@ -18,18 +18,23 @@ function Page(url, options) {
   EventEmitter.call(this);
 
   options = options || {};
-  this.reportNotices = options.reportNotices;
-  this.report = typeof options.report == 'undefined' || options.report;
+  this.notices = options.notices;
+  this.warnings = options.warnings;
 
   this._init();
 
+  this._startTime = null;
   this._finished = false;
 
   this.url = url;
 
-  this._outputBuffer = [];
+  this._outputBuffer = '';
+  this._errorBuffer = [];
   this._warningBuffer = [];
   this._noticeBuffer = [];
+
+  this._httpStatusCode = null;
+  this._ok = false;
 
   this._pageWindowLoaded = false;
 
@@ -41,28 +46,62 @@ function Page(url, options) {
 
 inherit(Page, EventEmitter, {
 
-  _exit: function(eventName) {
+  _setNetworkReplyErrorCode: function(errorCode) {
+    switch(errorCode) {
+      case 203:
+        this._httpStatusCode = 404;
+        break;
+      case 201:
+        this._httpStatusCode = 401;
+        break;
+      case 0:
+        this._httpStatusCode = 200;
+        break;
+      case 4:
+        this._httpStatusCode = 504;
+        break;
+      default:
+        this._httpStatusCode = 500;
+    }
+  },
+
+  _exit: function() {
     var
       finished = this._finished;
     this.stop();
     if (!finished) {
-      this.emit(eventName, this.getResult());
+      this._notice('Page execution time:', Date.now() - this._startTime, 'ms');
+      this.emit('exit', this.getResult());
     }
   },
   _exitOk: function() {
-    this._exit('Ok');
+    if (this._finished) {
+      return;
+    }
+    this._ok = true;
+    if (!this._httpStatusCode) {
+      this._httpStatusCode = 200;
+    }
+    this._exit();
   },
-  _exitError: function() {
-    this._exit('Error');
-  },
-  _exitPageNotFound: function() {
-    this._exit('PageNotFound');
+  _exitFail: function() {
+    if (this._finished) {
+      return;
+    }
+    this._ok = false;
+    this._exit();
   },
 
   _output: function(/* ...values*/) {
     var
       args = Array.prototype.slice.call(arguments);
-    this._outputBuffer.push(args.join(' '));
+    this._outputBuffer += args.join(' ');
+  },
+
+  _error: function(/* ...values*/) {
+    var
+      args = Array.prototype.slice.call(arguments);
+    this._errorBuffer.push(args.join(' '));
   },
 
   _warning: function(/* ...values*/) {
@@ -151,9 +190,8 @@ inherit(Page, EventEmitter, {
         'Error code: ' + resourceError.errorCode + '.',
         'Description: ' + resourceError.errorString
       );
-      if (resourceError.url == url && resourceError.errorCode == 203) {
-        self._exitPageNotFound();
-        return;
+      if (resourceError.url == url) {
+        self._setNetworkReplyErrorCode(resourceError.errorCode);
       }
       self._resourceResponses[resourceError.id] = resourceError;
       self._pageReadyCheck();
@@ -195,6 +233,7 @@ inherit(Page, EventEmitter, {
       self = this;
 
     this.page.onInitialized = function() {
+      self._pageWindowLoaded = this;
       self._webPageAddOnLoadCallback();
     };
   },
@@ -237,8 +276,8 @@ inherit(Page, EventEmitter, {
       });
     }
     catch(e) {
-      this._output('Could not evaluate js on page', this.url, e);
-      this._exitError();
+      this._error('Could not evaluate js on page', this.url, e);
+      this._exitFail();
     }
   },
 
@@ -304,14 +343,14 @@ inherit(Page, EventEmitter, {
           })
           .length;
 
-        self._output(
+        self._error(
           'TIMEOUT:', self._timeout,
           'Has ready flag:', self._hasReadyFlag(),
           'Ready flag value:', Boolean(self._getReadyFlag()),
           'Page window loaded:', self._pageWindowLoaded,
           'Pending resource count:', pendingResourcesCount
         );
-        self._exitError();
+        self._exitFail();
       },
       self._timeout
     );
@@ -340,19 +379,25 @@ inherit(Page, EventEmitter, {
     if (this._finished) {
       return;
     }
-    this._output(this._getPageContent());
+    this._performPageContent();
     this._exitOk();
   },
 
-  _getPageContent: function() {
+  _performPageContent: function() {
+    var
+      performer;
+
     try {
-      return new HtmlSanitizeFilter(this.page.content).getContent();
+      performer = new PageContentPerformer(this.page.content);
+      this._output(performer.getContent());
+      if (performer.hasMetaHttpStatusCode()) {
+        this._httpStatusCode = performer.getMetaHttpStatusCode();
+      }
     }
     catch(e) {
-      this._output('Could not get page content', e);
-      this._exitError();
+      this._error('Could not get page content', e);
+      this._exitFail();
     }
-    return null;
   },
 
   _getReadyFlag: function() {
@@ -362,8 +407,8 @@ inherit(Page, EventEmitter, {
       });
     }
     catch(e) {
-      this._output('Could not get prerender or impress ready flags value from page', e);
-      this._exitError();
+      this._error('Could not get prerender or impress ready flags value from page', e);
+      this._exitFail();
     }
     return null;
   },
@@ -375,8 +420,8 @@ inherit(Page, EventEmitter, {
       });
     }
     catch(e) {
-      this._output('Could not get prerender or impress ready flags information from page', e);
-      this._exitError();
+      this._error('Could not get prerender or impress ready flags information from page', e);
+      this._exitFail();
     }
     return null;
   },
@@ -393,11 +438,13 @@ inherit(Page, EventEmitter, {
     var
       self = this;
 
+    this._startTime = Date.now();
+
     try {
       this.page.open(this.url, function(status) {
         if (status !== 'success') {
-          self._output('Fail to load page');
-          self._exitError();
+          self._error('Fail to load page');
+          self._exitFail();
           return;
         }
         self._startReadyFlagChecker();
@@ -405,47 +452,29 @@ inherit(Page, EventEmitter, {
       });
     }
     catch(e) {
-      this._output(e);
-      this._exitError();
+      this._error(e);
+      this._exitFail();
     }
   },
 
   getResult: function() {
-    var
-      content = this._outputBuffer.join('\n'),
-      warningBlockBuilder,
-      position;
-
-    if (this._warningBuffer.length || this._noticeBuffer.length) {
-      if (/^\s*(<html|<!doctype)/i.test(content)) {
-        position = content.lastIndexOf('</body');
-        if (position != -1) {
-          warningBlockBuilder = [
-            '<script type="application/impress-report+json">',
-            '<![CDATA[',
-            JSON.stringify({
-              url: this.url,
-              warnings: this._warningBuffer,
-              notices: (this.reportNotices && this._noticeBuffer) || undefined
-            }),
-            ']]>',
-            '</script>'
-          ];
-
-          return content.slice(0, position)
-            + warningBlockBuilder.join('')
-            + content.slice(position);
-        }
-      }
-      else {
-        return content + '\n'
-          + 'IMPRESS REPORT FOR "' + this.url + '"\n'
-          + (this._warningBuffer.length ? 'WARNINGS:\n' + this._warningBuffer.join('\n') + '\n' : '' )
-          + (this.reportNotices && this._noticeBuffer.length ? 'NOTICES:\n' + this._noticeBuffer.join('\n') + '\n' : '' );
-      }
-    }
-
-    return content;
+    return {
+      url: this.url,
+      ok: this._ok,
+      httpStatusCode: this._httpStatusCode,
+      content: this._ok
+        ? this._outputBuffer
+        : undefined,
+      errors: !this._ok
+        ? this._errorBuffer
+        : undefined,
+      warnings: this.warnings && this._ok
+        ? this._warningBuffer
+        : undefined,
+      notices: this.notices && this._ok
+        ? this._noticeBuffer
+        : undefined
+    };
   }
 
 

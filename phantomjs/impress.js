@@ -21,6 +21,7 @@ if (argv['url-base64-encoded']) {
   }
 }
 
-options.reportNotices = argv['report-notices'];
+options.notices = argv['notices'];
+options.warnings = argv['warnings'];
 
 new Application(options).run();
