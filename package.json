@@ -15,6 +15,6 @@
     "qs": "^2.4.1",
     "http-proxy": "^1.10.1",
     "minimist": "^1.1.1",
-    "html-minifier": "betula/html-minifier#v0.7.3-pre"
+    "html-minifier": "kangax/html-minifier#25b23bcb12"
   }
 }
