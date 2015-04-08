@@ -21,6 +21,7 @@ var
     .describe('phantom-script', 'Path to phantomjs script file by default %IMPRESS_DIR%/phantomjs/impress.js')
     .describe('impress-max-content-length', 'Max impress content length by default 2097152')
     .describe('impress-report-notices', 'Add notices to impress report by default false')
+    .describe('exclude-impress-report', 'Exclude impress report from result content by default true')
     .help('h')
     .alias('h', 'help')
     .epilog('impress (https://github.com/icons8/impress)')
