@@ -47,6 +47,7 @@ function Page(url, options) {
 inherit(Page, EventEmitter, {
 
   _setNetworkReplyErrorCode: function(errorCode) {
+    // @see http://doc.qt.io/qt-5/qnetworkreply.html
     switch(errorCode) {
       case 203:
         this._httpStatusCode = 404;
