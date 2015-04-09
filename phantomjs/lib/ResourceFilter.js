@@ -33,18 +33,49 @@ ResourceFilter.prototype = {
     this._addBlockedResourcesRules();
   },
 
+  _getBlockedResourceConfig: function() {
+    var
+      configPath = this.blockedResourcesConfig,
+      localConfigPath,
+      config;
+
+    config = readJsonFile(configPath);
+
+    localConfigPath = configPath.replace(/\.[^./\\]+$/, function(match) {
+      return '.local' + match;
+    });
+    if (configPath == localConfigPath) {
+      localConfigPath += '.local';
+    }
+
+    if (fs.exists(localConfigPath)) {
+      Array.prototype.push.apply(
+        config,
+        readJsonFile(localConfigPath)
+      )
+    }
+
+    return config;
+
+    function readJsonFile(filePath) {
+      var
+        stream,
+        data = '';
+      stream = fs.open(filePath, 'r');
+      while(!stream.atEnd()) {
+        data += stream.readLine();
+      }
+      return JSON.parse(data);
+    }
+
+  },
+
   _addBlockedResourcesRules: function() {
     var
-      resourcesListJson = '',
-      resourcesList,
-      stream;
+      resourcesList;
 
-    stream = fs.open(this.blockedResourcesConfig, 'r');
-    while(!stream.atEnd()) {
-      resourcesListJson += stream.readLine();
-    }
-    resourcesList = JSON.parse(resourcesListJson);
-
+    resourcesList = this._getBlockedResourceConfig();
+    
     this.rules.push(function(url) {
       var
         match,
