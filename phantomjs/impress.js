@@ -21,6 +21,7 @@ if (argv['url-base64-encoded']) {
   }
 }
 
+options.serverPort = argv['server-port'];
 options.notices = argv['notices'];
 options.warnings = argv['warnings'];
 

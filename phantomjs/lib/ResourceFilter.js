@@ -75,7 +75,7 @@ ResourceFilter.prototype = {
       resourcesList;
 
     resourcesList = this._getBlockedResourceConfig();
-    
+
     this.rules.push(function(url) {
       var
         match,

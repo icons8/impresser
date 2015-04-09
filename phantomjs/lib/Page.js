@@ -17,6 +17,11 @@ module.exports = Page;
 function Page(url, options) {
   EventEmitter.call(this);
 
+  if (url && typeof url == 'object') {
+    options = url;
+    url = null;
+  }
+
   options = options || {};
   this.notices = options.notices;
   this.warnings = options.warnings;
@@ -26,7 +31,7 @@ function Page(url, options) {
   this._startTime = null;
   this._finished = false;
 
-  this.url = url;
+  this.url = url || options.url || '';
 
   this._outputBuffer = '';
   this._errorBuffer = [];
@@ -131,6 +136,7 @@ inherit(Page, EventEmitter, {
   _webPageConfigure: function() {
     this.page.settings.userAgent = 'Prerender Impress';
     this.page.settings.loadImages = false;
+    this.page.settings.clearMemoryCaches = true;
   },
 
   _webPageInitListeners: function() {
@@ -442,6 +448,9 @@ inherit(Page, EventEmitter, {
     this._startTime = Date.now();
 
     try {
+      if (this.page.clearMemoryCache) {
+        this.page.clearMemoryCache();
+      }
       this.page.open(this.url, function(status) {
         if (status !== 'success') {
           self._error('Fail to load page');
@@ -476,6 +485,16 @@ inherit(Page, EventEmitter, {
         ? this._noticeBuffer
         : undefined
     };
+  },
+
+  destroy: function() {
+    this._outputBuffer = null;
+    this._errorBuffer = null;
+    this._warningBuffer = null;
+    this._noticeBuffer = null;
+    this._resourceResponses = null;
+    this._abortedResources = null;
+    this.page.close();
   }
 
 

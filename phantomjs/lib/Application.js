@@ -1,48 +1,60 @@
-const
-  OK_EXIT_CODE = 0
-  ;
-
 var
-  Page = require('./Page');
+  Shell = require('./Shell'),
+  Page = require('./Page'),
+  Server = require('./Server'),
+  inherit = require('./inherit'),
+  EventEmitter = require('./EventEmitter');
 
 module.exports = Application;
 
 function Application(options) {
+  EventEmitter.call(this);
+
   this.options = options || {};
-  this.url = this.options.url || '';
   this._init();
 }
 
-Application.prototype = {
+inherit(Application, EventEmitter, {
 
-  _init: function() {
-    this.page = new Page(this.url, this.options);
-    this._initPageListeners();
-  },
 
-  _initPageListeners: function() {
+  _initPage: function() {
     var
-      self = this,
-      page = this.page;
+      page;
 
+    page = new Page(this.options);
     page.on('exit', function(result) {
-      self.send(result);
-      self.exit(OK_EXIT_CODE);
+      Shell.output(JSON.stringify(result));
+      Shell.exit();
     });
 
+    this.on('run', function() {
+      page.open();
+    });
   },
 
-  exit: function(code) {
-    phantom.exit(code);
+  _initServer: function() {
+    var
+      server;
+
+    server = new Server(this.options);
+    this.on('run', function() {
+      server.run();
+    });
   },
 
-  send: function(result) {
-    console.log(JSON.stringify(result));
+  _init: function() {
+    if (this.options.url) {
+      this._initPage();
+    }
+    else {
+      this._initServer();
+    }
   },
 
   run: function() {
-    this.page.open();
+    this.emit('run');
   }
 
-};
+});
+
 
