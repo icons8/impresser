@@ -15,6 +15,7 @@
     "qs": "^2.4.1",
     "http-proxy": "^1.10.1",
     "minimist": "^1.1.1",
-    "html-minifier": "kangax/html-minifier#25b23bcb12"
+    "html-minifier": "kangax/html-minifier#25b23bcb12",
+    "request": "^2.55.0"
   }
 }

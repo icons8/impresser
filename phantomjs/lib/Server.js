@@ -28,13 +28,13 @@ Server.prototype = {
       self = this;
 
     try {
-      serverInstance = server.listen(port, function (request, response) {
+      serverInstance = server.listen(port, function (req, res) {
         var
           query,
           url,
           page;
 
-        query = qs.parse(request.url.split('?')[1]);
+        query = qs.parse(req.url.split('?')[1]);
         url = query.url || query.uri || query.page;
 
         try {
@@ -56,13 +56,13 @@ Server.prototype = {
         }
 
         function send(result) {
-          response.statusCode = 200;
-          response.headers = {
-            'Cache': 'no-cache',
-            'Content-Type': 'text/html'
+          res.statusCode = 200;
+          res.headers = {
+            "Cache": 'no-cache',
+            "Content-Type": 'text/html'
           };
-          response.write(JSON.stringify(result));
-          response.close();
+          res.write(JSON.stringify(result));
+          res.close();
         }
       });
 

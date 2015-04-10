@@ -4,6 +4,7 @@ var
 	system = require('system'),
   Application = require('./lib/Application'),
   minimist = require('../node_modules/minimist'),
+  Shell = require('./lib/Shell'),
   argv,
   options = {};
 
@@ -16,8 +17,7 @@ if (argv['url-base64-encoded']) {
     options.url = window.atob(options.url);
   }
   catch(e) {
-    console.log('Incorrect base64 formatted url', e);
-    phantom.exit(10);
+    Shell.exitWithError('Incorrect base64 formatted url', e);
   }
 }
 
