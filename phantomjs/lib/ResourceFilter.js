@@ -61,11 +61,16 @@ ResourceFilter.prototype = {
       var
         stream,
         data = '';
-      stream = fs.open(filePath, 'r');
-      while(!stream.atEnd()) {
-        data += stream.readLine();
+      try {
+        stream = fs.open(filePath, 'r');
+        while(!stream.atEnd()) {
+          data += stream.readLine();
+        }
+        return JSON.parse(data);
       }
-      return JSON.parse(data);
+      catch(e) {
+        throw new Error('Could not read file "' + filePath + '". Expected error: ' + String(e));
+      }
     }
 
   },

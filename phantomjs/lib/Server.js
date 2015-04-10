@@ -41,26 +41,37 @@ Server.prototype = {
           page = new Page(url, self.options);
           page.on('exit', function(content) {
             send(content);
-            try {
-              page.destroy();
-            }
-            catch(error) {
-              Shell.exitWithError('Error: could not destroy page object', url, error);
-            }
+            setTimeout(function() {
+              try {
+                page.destroy();
+              }
+              catch(error) {
+                Shell.exitWithError('Error: could not destroy page object', url, error);
+              }
+            });
           });
           page.open();
         }
         catch(error) {
-          Shell.exitWithError('Error: could not open page', url, error);
+          send(500);
+          setTimeout(function() {
+            Shell.exitWithError('Error: could not open page', url, error);
+          });
         }
 
-        function send(result) {
-          res.statusCode = 200;
+        function send(code, result) {
+          if (typeof code != 'number') {
+            result = code;
+            code = 200;
+          }
+          res.statusCode = code;
           res.headers = {
             "Cache": 'no-cache',
             "Content-Type": 'text/html'
           };
-          res.write(JSON.stringify(result));
+          if (result) {
+            res.write(JSON.stringify(result));
+          }
           res.close();
         }
       });
