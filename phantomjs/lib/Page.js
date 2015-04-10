@@ -30,6 +30,7 @@ function Page(url, options) {
 
   this._startTime = null;
   this._finished = false;
+  this._destroyed = false;
 
   this.url = url || options.url || '';
 
@@ -294,7 +295,7 @@ inherit(Page, EventEmitter, {
       resourcesPending,
       cancelReadyDelayTimeout = true;
 
-    if (this._finished) {
+    if (this._finished || this._destroyed) {
       return;
     }
 
@@ -337,6 +338,11 @@ inherit(Page, EventEmitter, {
   _startTimeout: function() {
     var
       self = this;
+
+    if (this._finished || this._destroyed) {
+      return;
+    }
+
     this._timeoutId = setTimeout(
       function() {
         var
@@ -370,6 +376,10 @@ inherit(Page, EventEmitter, {
   _startReadyFlagChecker: function() {
     var
       self = this;
+
+    if (this._finished || this._destroyed) {
+      return;
+    }
 
     this._checkerIntervalId = setInterval(function() {
       if (self._hasReadyFlag()) {
@@ -488,6 +498,7 @@ inherit(Page, EventEmitter, {
   },
 
   destroy: function() {
+    this._destroyed = false;
     this._outputBuffer = null;
     this._errorBuffer = null;
     this._warningBuffer = null;

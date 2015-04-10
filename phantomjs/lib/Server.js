@@ -41,7 +41,6 @@ Server.prototype = {
           page = new Page(url, self.options);
           page.on('exit', function(content) {
             send(content);
-            Shell.log('Ok: page', url);
             try {
               page.destroy();
             }
