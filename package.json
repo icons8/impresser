@@ -5,8 +5,21 @@
     "url": "https://github.com/icons8/impress"
   },
   "license": "MIT",
+  "tags": [
+    "prerender",
+    "impress"
+  ],
+  "files": [
+    "index.js",
+    "lib",
+    "bin",
+    "phantomjs"
+  ],
   "engines": {
     "node": ">= 0.10.0"
+  },
+  "bin": {
+    "impress": "./bin/impress.js"
   },
   "dependencies": {
     "yargs": "^3.6.0",
@@ -15,7 +28,6 @@
     "qs": "^2.4.1",
     "http-proxy": "^1.10.1",
     "minimist": "^1.1.1",
-    "html-minifier": "kangax/html-minifier#25b23bcb12",
     "request": "^2.55.0"
   }
 }

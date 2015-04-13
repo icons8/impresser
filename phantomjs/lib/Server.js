@@ -1,6 +1,3 @@
-const
-  EXIT_ERROR_CODE = 1;
-
 var
   Shell = require('./Shell'),
   webServer = require('webserver'),
@@ -32,13 +29,31 @@ Server.prototype = {
         var
           query,
           url,
-          page;
+          blockedResources,
+          page,
+          pageOptions = {};
+
+        pageOptions.__proto__ = self.options;
 
         query = qs.parse(req.url.split('?')[1]);
-        url = query.url || query.uri || query.page;
+        url = query.url;
+
+        if (typeof query['blocked-resources'] != 'undefined') {
+          blockedResources = query['blocked-resources'];
+          if (!Array.isArray(blockedResources)) {
+            blockedResources = [];
+          }
+          blockedResources = blockedResources.filter(function(resource) {
+            return resource;
+          });
+
+          pageOptions.blockedResources = blockedResources;
+        }
+        pageOptions.url = url;
 
         try {
-          page = new Page(url, self.options);
+          page = new Page(pageOptions);
+
           page.on('exit', function(content) {
             send(content);
             setTimeout(function() {

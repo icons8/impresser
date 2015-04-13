@@ -1,5 +1,5 @@
 var
-  fs = require('fs');
+  jsonFileReader = require('./jsonFileReader');
 
 module.exports = ResourceFilter;
 
@@ -7,7 +7,8 @@ function ResourceFilter(options) {
   this.options = options || {};
 
   this.rules = [];
-  this.blockedResourcesConfig = phantom.libraryPath + '/' + (this.options.blockedResourcesConfig || 'config/blocked-resources.json');
+  this.blockedResources = options.blockedResources;
+  this.blockedResourcesConfig = options.blockedResourcesConfig;
 
   this._addRules();
 }
@@ -33,76 +34,55 @@ ResourceFilter.prototype = {
     this._addBlockedResourcesRules();
   },
 
-  _getBlockedResourceConfig: function() {
-    var
-      configPath = this.blockedResourcesConfig,
-      localConfigPath,
-      config;
+  _getBlockedResourcesFromConfig: function() {
+    return jsonFileReader(this.blockedResourcesConfig);
+  },
 
-    config = readJsonFile(configPath);
-
-    localConfigPath = configPath.replace(/\.[^./\\]+$/, function(match) {
-      return '.local' + match;
-    });
-    if (configPath == localConfigPath) {
-      localConfigPath += '.local';
+  _getBlockedResources: function() {
+    if (this.blockedResources) {
+      return this.blockedResources;
     }
-
-    if (fs.exists(localConfigPath)) {
-      Array.prototype.push.apply(
-        config,
-        readJsonFile(localConfigPath)
-      )
+    if (this.blockedResourcesConfig) {
+      return this._getBlockedResourcesFromConfig();
     }
-
-    return config;
-
-    function readJsonFile(filePath) {
-      var
-        stream,
-        data = '';
-      try {
-        stream = fs.open(filePath, 'r');
-        while(!stream.atEnd()) {
-          data += stream.readLine();
-        }
-        return JSON.parse(data);
-      }
-      catch(e) {
-        throw new Error('Could not read file "' + filePath + '". Expected error: ' + String(e));
-      }
-    }
-
+    return null;
   },
 
   _addBlockedResourcesRules: function() {
     var
-      resourcesList;
+      resources,
+      regExpBuilder = [],
+      regExp;
 
-    resourcesList = this._getBlockedResourceConfig();
+    resources = this._getBlockedResources();
+    if (!resources) {
+      return;
+    }
+
+    regExpBuilder.push(
+      '^(?:https?:\\/\\/)?[^?/]*?',
+      '(?:',
+      resources
+        .map(function(res) {
+          return regExpQuote(res).trim();
+        })
+        .filter(function(res) {
+          return res;
+        })
+        .join('|'),
+      ')'
+    );
+
+    regExp = new RegExp(regExpBuilder.join(''), 'i');
 
     this.rules.push(function(url) {
-      var
-        match,
-        _url,
-        index,
-        res;
-
-      match = url.match(/^(?:https?:\/\/)?(?:www\.)?(.*)$/i);
-      if (!match) {
-        return true;
-      }
-      _url = match[1];
-
-      for (index = 0; index < resourcesList.length; index++) {
-        res = resourcesList[index];
-        if (_url.slice(0, res.length) == res) {
-          return false;
-        }
-      }
-
-      return true;
+      return !regExp.test(url);
     });
+
+    function regExpQuote(str) {
+      // @see http://phpjs.org/functions/preg_quote/
+      return String(str || '').replace(/[.\\+*?\[\^\]$(){}=!<>|:-]/g, '\\$&');
+    }
   },
 
   _addFontRule: function() {

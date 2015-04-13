@@ -14,15 +14,12 @@ var
 
 module.exports = Page;
 
-function Page(url, options) {
+function Page(options) {
   EventEmitter.call(this);
 
-  if (url && typeof url == 'object') {
-    options = url;
-    url = null;
-  }
-
   options = options || {};
+
+  this.options = options;
   this.notices = options.notices;
   this.warnings = options.warnings;
 
@@ -32,7 +29,7 @@ function Page(url, options) {
   this._finished = false;
   this._destroyed = false;
 
-  this.url = url || options.url || '';
+  this.url = options.url || '';
 
   this._outputBuffer = '';
   this._errorBuffer = [];
@@ -125,7 +122,7 @@ inherit(Page, EventEmitter, {
 
   _init: function() {
     this._webPageInit();
-    this.resourceFilter = new ResourceFilter();
+    this.resourceFilter = new ResourceFilter(this.options);
   },
 
   _webPageInit: function() {
@@ -137,7 +134,6 @@ inherit(Page, EventEmitter, {
   _webPageConfigure: function() {
     this.page.settings.userAgent = 'Prerender Impress';
     this.page.settings.loadImages = false;
-    this.page.settings.clearMemoryCaches = true;
   },
 
   _webPageInitListeners: function() {
@@ -458,9 +454,6 @@ inherit(Page, EventEmitter, {
     this._startTime = Date.now();
 
     try {
-      if (this.page.clearMemoryCache) {
-        this.page.clearMemoryCache();
-      }
       this.page.open(this.url, function(status) {
         if (status !== 'success') {
           self._error('Fail to load page');
