@@ -3,7 +3,7 @@
 'use strict';
 
 var
-  Server = require('../lib/Server'),
+  Application = require('../lib/Application'),
   yargs = require('yargs'),
 
   argv = yargs
@@ -29,4 +29,4 @@ var
     .epilog('impress (https://github.com/icons8/impress)')
     .argv;
 
-new Server(argv).run();
+new Application(argv).run();
