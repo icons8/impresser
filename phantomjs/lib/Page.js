@@ -37,6 +37,7 @@ function Page(options) {
   this._noticeBuffer = [];
 
   this._httpStatusCode = null;
+  this._httpHeaders = null;
   this._ok = false;
 
   this._pageWindowLoaded = false;
@@ -406,6 +407,9 @@ inherit(Page, EventEmitter, {
       if (performer.hasMetaHttpStatusCode()) {
         this._httpStatusCode = performer.getMetaHttpStatusCode();
       }
+      if (performer.hasMetaHttpHeaders()) {
+        this._httpHeaders = performer.getMetaHttpHeaders();
+      }
     }
     catch(e) {
       this._error('Could not get page content', e);
@@ -475,6 +479,7 @@ inherit(Page, EventEmitter, {
       url: this.url,
       ok: this._ok,
       httpStatusCode: this._httpStatusCode,
+      httpHeaders: this._httpHeaders,
       content: this._ok
         ? this._outputBuffer
         : undefined,
