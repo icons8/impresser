@@ -12,6 +12,7 @@ var
     .describe('frontend', 'Use impress as frontend server by default true')
     .describe('proxy', 'Use proxy server for resources and not GET requests by default true')
     .describe('server-port', 'Port of impress server by default 8497')
+    .describe('impress-force-header', 'Parse impress force header for force reset stored page by default false')
     .describe('storage', 'Use storage for impressed pages by default true')
     .describe('max-parallel', 'Limit of parallel impress instances, by default 2 on each CPU cores')
     .describe('max-queue', 'Limit of impress queue, by default 30 * "Limit of parallel impress instances.')
