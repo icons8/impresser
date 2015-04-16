@@ -17,6 +17,7 @@ var
     .describe('max-queue', 'Limit of impress queue, by default 30 * "Limit of parallel impress instances.')
     .describe('max-queue-timeout', 'Max timeout for deferring in queue by default 60000')
     .describe('phantom-binary', 'Path to phantomjs binary file by default phantomjs command')
+    .describe('phantom-ttl', 'Time to live for phantomjs instance by default 1800000')
     .describe('phantom-args', 'Add or reassign args for phantomjs command line by default "ignore-ssl-errors=true ssl-protocol=tlsv1"')
     .describe('phantom-script', 'Path to phantomjs script file by default %IMPRESS_DIR%/phantomjs/impress.js')
     .describe('phantom-port-low', 'Low bound of phantomjs server port by default 8498')

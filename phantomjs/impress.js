@@ -13,8 +13,8 @@ var
 
 argv = minimist(system.args);
 
-if (argv['config']) {
-  options = jsonFileReader(argv['config']) || {};
+if (argv.config) {
+  options = jsonFileReader(argv.config) || {};
 }
 
 url = argv['_'][1];
@@ -55,7 +55,8 @@ if (blockedResources.length) {
 options.blockedResourcesConfig = argv['blocked-resources-config'] || options.blockedResourcesConfig;
 
 options.serverPort = argv['server-port'] || options.serverPort;
-options.notices = argv['notices'] || options.notices;
-options.warnings = argv['warnings'] || options.warnings;
+options.notices = argv.notices || options.notices;
+options.warnings = argv.warnings || options.warnings;
+options.timeout = argv.timeout || options.timeout;
 
 new Application(options).run();

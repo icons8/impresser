@@ -45,7 +45,7 @@ function Page(options) {
   this._resourceResponses = {};
   this._abortedResources = [];
   this._readyCheckInterval = DEFAULT_READY_CHECK_INTERVAL;
-  this._timeout = DEFAULT_TIMEOUT;
+  this._timeout = options.timeout || DEFAULT_TIMEOUT;
 }
 
 inherit(Page, EventEmitter, {
@@ -458,6 +458,7 @@ inherit(Page, EventEmitter, {
     this._startTime = Date.now();
 
     try {
+      this._startTimeout();
       this.page.open(this.url, function(status) {
         if (status !== 'success') {
           self._error('Fail to load page');
@@ -465,7 +466,6 @@ inherit(Page, EventEmitter, {
           return;
         }
         self._startReadyFlagChecker();
-        self._startTimeout();
       });
     }
     catch(e) {
