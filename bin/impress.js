@@ -22,6 +22,7 @@ var
     .describe('phantom-script', 'Path to phantomjs script file by default %IMPRESS_DIR%/phantomjs/impress.js')
     .describe('phantom-port-low', 'Low bound of phantomjs server port by default 8498')
     .describe('phantom-port-high', 'High bound of phantomjs server port by default 8598')
+    .describe('phantom-port-release-delay', 'Delay of release phantomjs server port by default 10000')
     .describe('phantom-exec-timeout', 'Max phantomjs execution time by default 6000')
     .describe('impress-timeout', 'Max impress execution time by default 30000')
     .describe('impress-attempt-timeout', 'Max impress attempt time by default 12000')
