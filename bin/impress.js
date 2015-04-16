@@ -27,6 +27,7 @@ var
     .describe('impress-attempt-timeout', 'Max impress attempt time by default 12000')
     .describe('impress-notices', 'Add notices to impress report by default false')
     .describe('impress-warnings', 'Add warnings to impress report by default false')
+    .describe('config', 'Path to config file, can be multiple')
     .help('h')
     .alias('h', 'help')
     .epilog('impress (https://github.com/icons8/impress)')
