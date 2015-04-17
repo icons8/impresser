@@ -17,7 +17,7 @@ if (argv.config) {
   options = jsonFileReader(argv.config) || {};
 }
 
-url = argv['_'][1];
+url = argv._[1];
 if (url && argv['url-base64-encoded']) {
   try {
     url = window.atob(String(url));

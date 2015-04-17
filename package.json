@@ -9,15 +9,6 @@
     "prerender",
     "impress"
   ],
-  "files": [
-    "index.js",
-    "lib",
-    "bin",
-    "phantomjs"
-  ],
-  "engines": {
-    "node": ">= 0.10.0"
-  },
   "bin": {
     "impress": "./bin/impress.js"
   },
