@@ -238,7 +238,7 @@ inherit(Page, EventEmitter, {
       self = this;
 
     this.page.onInitialized = function() {
-      self._pageWindowLoaded = this;
+      self._pageWindowLoaded = false;
       self._webPageAddOnLoadCallback();
     };
   },
