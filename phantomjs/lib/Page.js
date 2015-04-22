@@ -38,6 +38,7 @@ function Page(options) {
 
   this._httpStatusCode = null;
   this._httpHeaders = null;
+  this._contentType = null;
   this._ok = false;
 
   this._pageWindowLoaded = false;
@@ -229,6 +230,12 @@ inherit(Page, EventEmitter, {
       self = this;
 
     this.page.onResourceReceived = function(response) {
+      var
+        url = self.url;
+
+      if (response.url == url) {
+        self._contentType = response.contentType;
+      }
       self._resourceResponses[response.id] = response;
       self._pageReadyCheck();
     };
@@ -509,6 +516,7 @@ inherit(Page, EventEmitter, {
       ok: this._ok,
       httpStatusCode: this._httpStatusCode,
       httpHeaders: this._httpHeaders,
+      contentType: this._contentType,
       content: this._ok
         ? this._outputBuffer
         : undefined,
