@@ -14,6 +14,7 @@ var
     .describe('server-port', 'Port of impress server by default 8497')
     .describe('force-allowed', 'Allow force header or param for force reset stored page by default false')
     .describe('storage', 'Use storage for impressed pages by default true')
+    .describe('content', 'Return impressed pages content by default true')
     .describe('max-parallel', 'Limit of parallel impress instances, by default 2 on each CPU cores')
     .describe('max-queue', 'Limit of impress queue, by default 30 * "Limit of parallel impress instances.')
     .describe('max-queue-timeout', 'Max timeout for deferring in queue by default 60000')
