@@ -8,10 +8,10 @@ var
 
   argv = yargs
     .usage('Usage: $0 [config.json[, ...config.json]] [options]')
-    .describe('base-url', 'Base url for proxy addresses by default http://icons8.com')
-    .describe('frontend', 'Use impress as frontend server by default true')
+    .describe('base-url', 'Base url for relative addresses by default http://icons8.com')
+    .describe('frontend', 'Use impresser as frontend server by default true')
     .describe('proxy', 'Use proxy server for resources and not GET requests by default true')
-    .describe('server-port', 'Port of impress server by default 8497')
+    .describe('server-port', 'Port of impresser server by default 8497')
     .describe('force-allowed', 'Allow force header or param for force reset stored page by default false')
     .describe('storage', 'Use storage for impressed pages by default true')
     .describe('content', 'Return impressed pages content by default true')
@@ -37,7 +37,7 @@ var
     .describe('config', 'Path to config file, can be multiple')
     .help('h')
     .alias('h', 'help')
-    .epilog('impress (https://github.com/icons8/impress)')
+    .epilog('impresser (https://github.com/icons8/impresser)')
     .argv,
 
   options;

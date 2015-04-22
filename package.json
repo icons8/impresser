@@ -1,16 +1,17 @@
 {
-  "name": "impress",
+  "name": "impresser",
   "version": "0.3.2",
   "repository": {
-    "url": "https://github.com/icons8/impress"
+    "url": "https://github.com/icons8/impresser"
   },
   "license": "MIT",
   "tags": [
     "prerender",
-    "impress"
+    "impress",
+    "impresser"
   ],
   "bin": {
-    "impress": "./bin/impress.js"
+    "impresser": "./bin/impresser.js"
   },
   "dependencies": {
     "yargs": "^3.6.0",

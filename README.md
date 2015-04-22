@@ -1,7 +1,7 @@
 # Installation
 
-Add phantomjs binary to ./phantomjs/binary/.
+    npm install -g impresser
 
-Run ./bin/impress.js in command line.
+    impresser -h
 
 Enjoy.
