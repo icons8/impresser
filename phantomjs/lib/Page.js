@@ -133,8 +133,9 @@ inherit(Page, EventEmitter, {
   },
 
   _webPageConfigure: function() {
-    this.page.settings.userAgent = 'Prerender Impress';
+    this.page.settings.userAgent = 'Prerender Impress Impresser';
     this.page.settings.loadImages = false;
+    this.page.settings.clearMemoryCaches = true;
   },
 
   _webPageInitListeners: function() {
@@ -240,6 +241,7 @@ inherit(Page, EventEmitter, {
     this.page.onInitialized = function() {
       self._pageWindowLoaded = false;
       self._webPageAddOnLoadCallback();
+      self._webPageClearPersistentData();
     };
   },
 
@@ -283,6 +285,25 @@ inherit(Page, EventEmitter, {
     catch(e) {
       this._error('Could not evaluate js on page', this.url, e);
       this._exitFail();
+    }
+  },
+
+  _webPageClearPersistentData: function() {
+    try {
+      this.page.clearCookies();
+      this.page.evaluate(function() {
+        try {
+          localStorage.clear();
+        }
+        catch(e) {}
+        try {
+          sessionStorage.clear();
+        }
+        catch(e) {}
+      });
+    }
+    catch(e) {
+      this._warning('Could not clear persistent data for page', this.url, e);
     }
   },
 
@@ -459,6 +480,14 @@ inherit(Page, EventEmitter, {
 
     try {
       this._startTimeout();
+      if (this.page.clearMemoryCache) {
+        try {
+          this.page.clearMemoryCache();
+        }
+        catch(e) {
+          this._warning('Could not get clear memory cache for page', this.url, e);
+        }
+      }
       this.page.open(this.url, function(status) {
         if (status !== 'success') {
           self._error('Fail to load page');
