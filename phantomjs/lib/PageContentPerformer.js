@@ -37,7 +37,7 @@ PageContentPerformer.prototype = {
       httpStatusCodeMatch,
       httpStatusCode;
 
-    metaMatch = this.content.match(/<meta[^>]*?(?:prerender|impress)-status-code[^>]*>/i);
+    metaMatch = this.content.match(/<meta[^>]*?(?:prerender|impress(?:er)?)-status-code[^>]*>/i);
     if (metaMatch) {
       httpStatusCodeMatch = metaMatch[0].match(/content\s*=\s*["']?\s*(\d+)/i);
       if (httpStatusCodeMatch) {
@@ -56,7 +56,7 @@ PageContentPerformer.prototype = {
 
     headers = this.metaHttpHeders;
 
-    metaMatches = this.content.match(/<meta[^>]*?(?:prerender|impress)-header[^>]*>/ig);
+    metaMatches = this.content.match(/<meta[^>]*?(?:prerender|impress(?:er)?)-header[^>]*>/ig);
     if (metaMatches) {
 
       metaMatches.forEach(function(metaMatch) {
