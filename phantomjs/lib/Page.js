@@ -31,7 +31,7 @@ function Page(options) {
 
   this.url = options.url || '';
 
-  this._redirectUrl = [];
+  this._redirectUrl = null;
 
   this._outputBuffer = '';
   this._errorBuffer = [];
