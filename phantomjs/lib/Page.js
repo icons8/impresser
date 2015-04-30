@@ -31,6 +31,8 @@ function Page(options) {
 
   this.url = options.url || '';
 
+  this._redirectUrl = [];
+
   this._outputBuffer = '';
   this._errorBuffer = [];
   this._warningBuffer = [];
@@ -235,6 +237,7 @@ inherit(Page, EventEmitter, {
 
       if (response.url == url) {
         self._contentType = response.contentType;
+        self._redirectUrl = response.redirectURL;
       }
       self._resourceResponses[response.id] = response;
       self._pageReadyCheck();
@@ -513,6 +516,7 @@ inherit(Page, EventEmitter, {
   getResult: function() {
     return {
       url: this.url,
+      redirectUrl: this._redirectUrl || null,
       ok: this._ok,
       httpStatusCode: this._httpStatusCode,
       httpHeaders: this._httpHeaders,
@@ -533,7 +537,10 @@ inherit(Page, EventEmitter, {
   },
 
   destroy: function() {
-    this._destroyed = false;
+    this._destroyed = true;
+    this._redirectUrl = null;
+    this._httpHeaders = null;
+    this._httpStatusCode = null;
     this._outputBuffer = null;
     this._errorBuffer = null;
     this._warningBuffer = null;
