@@ -32,6 +32,7 @@ function Page(options) {
   this.url = options.url || '';
 
   this._redirectUrl = null;
+  this._location = null;
 
   this._outputBuffer = '';
   this._errorBuffer = [];
@@ -199,7 +200,7 @@ inherit(Page, EventEmitter, {
         'Error code: ' + resourceError.errorCode + '.',
         'Description: ' + resourceError.errorString
       );
-      if (resourceError.url == url) {
+      if (resourceError.url == url || (self._redirectUrl && resourceError.url == self._redirectUrl)) {
         self._setNetworkReplyErrorCode(resourceError.errorCode);
       }
       self._resourceResponses[resourceError.id] = resourceError;
@@ -235,9 +236,11 @@ inherit(Page, EventEmitter, {
       var
         url = self.url;
 
-      if (response.url == url) {
+      if (response.url == url || (self._redirectUrl && response.url == self._redirectUrl)) {
         self._contentType = response.contentType;
-        self._redirectUrl = response.redirectURL;
+        if (response.redirectURL) {
+          self._redirectUrl = response.redirectURL;
+        }
       }
       self._resourceResponses[response.id] = response;
       self._pageReadyCheck();
@@ -433,6 +436,7 @@ inherit(Page, EventEmitter, {
       performer;
 
     try {
+      this._location = this._getLocation();
       performer = new PageContentPerformer(this.page.content);
       this._output(performer.getContent());
       if (performer.hasMetaHttpStatusCode()) {
@@ -470,6 +474,18 @@ inherit(Page, EventEmitter, {
     catch(e) {
       this._error('Could not get prerender or impress ready flags information from page', e);
       this._exitFail();
+    }
+    return null;
+  },
+
+  _getLocation: function() {
+    try {
+      return this.page.evaluate(function() {
+        return window.location.href;
+      });
+    }
+    catch(e) {
+      this._warning('Could not get page location', e);
     }
     return null;
   },
@@ -517,6 +533,7 @@ inherit(Page, EventEmitter, {
     return {
       url: this.url,
       redirectUrl: this._redirectUrl || null,
+      location: this._location || null,
       ok: this._ok,
       httpStatusCode: this._httpStatusCode,
       httpHeaders: this._httpHeaders,
