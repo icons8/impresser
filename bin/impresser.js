@@ -33,6 +33,7 @@ var
     .describe('impress-timeout', 'Max impress execution time by default 47000')
     .describe('impress-attempt-timeout', 'Max impress attempt time by default 20000')
     .describe('impress-notices', 'Add notices to impress report by default true')
+    .describe('impress-resources-logging', 'Add logging for impress resources received by default false')
     .describe('impress-warnings', 'Add warnings to impress report by default true')
     .describe('config', 'Path to config file, can be multiple')
     .help('h')

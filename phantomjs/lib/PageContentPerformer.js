@@ -24,7 +24,7 @@ PageContentPerformer.prototype = {
   apply: function() {
     this._htmlSanitize();
     this._parseHttpStatusCode();
-    this._parseHttpStatusCode();
+    this._parseHttpHeaders();
   },
 
   _htmlSanitize: function() {
@@ -37,7 +37,7 @@ PageContentPerformer.prototype = {
       httpStatusCodeMatch,
       httpStatusCode;
 
-    metaMatch = this.content.match(/<meta[^>]*?(?:prerender|impress(?:er)?)-status-code[^>]*>/i);
+    metaMatch = this.content.match(/<meta[^>]*?name\s*=\s*["']?(?:prerender|impress(?:er)?)-status-code[>'"\s][^>]*>/i);
     if (metaMatch) {
       httpStatusCodeMatch = metaMatch[0].match(/content\s*=\s*["']?\s*(\d+)/i);
       if (httpStatusCodeMatch) {
@@ -56,7 +56,7 @@ PageContentPerformer.prototype = {
 
     headers = this.metaHttpHeders;
 
-    metaMatches = this.content.match(/<meta[^>]*?(?:prerender|impress(?:er)?)-header[^>]*>/ig);
+    metaMatches = this.content.match(/<meta[^>]*?name\s*=\s*["']?(?:prerender|impress(?:er)?)-header[>'"\s][^>]*>/ig);
     if (metaMatches) {
 
       metaMatches.forEach(function(metaMatch) {
@@ -69,7 +69,7 @@ PageContentPerformer.prototype = {
             return part.trim();
           });
           if (headerMatch[0]) {
-            headers[headerMatch[0]] = headerMatch[1] || '';
+            headers[headerMatch[0]] = headerMatch.slice(1).join(':');
           }
         }
       });

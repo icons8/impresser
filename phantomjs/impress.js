@@ -58,5 +58,6 @@ options.serverPort = argv['server-port'] || options.serverPort;
 options.notices = argv.notices || options.notices;
 options.warnings = argv.warnings || options.warnings;
 options.timeout = argv.timeout || options.timeout;
+options.resourcesLogging = argv['resources-logging'] || options.resourcesLogging;
 
 new Application(options).run();

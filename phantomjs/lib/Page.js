@@ -22,6 +22,7 @@ function Page(options) {
   this.options = options;
   this.notices = options.notices;
   this.warnings = options.warnings;
+  this.resourcesLogging = options.resourcesLogging;
 
   this._init();
 
@@ -31,7 +32,7 @@ function Page(options) {
 
   this.url = options.url || '';
 
-  this._redirectUrl = null;
+  this._redirectUrlList = [];
   this._location = null;
 
   this._outputBuffer = '';
@@ -45,6 +46,8 @@ function Page(options) {
   this._ok = false;
 
   this._pageWindowLoaded = false;
+  this._pageUrlMissedFragmentFixing = false;
+  this._pageUrlMissedFragmentRedirectUrl = null;
 
   this._resourceResponses = {};
   this._abortedResources = [];
@@ -77,12 +80,13 @@ inherit(Page, EventEmitter, {
   _exit: function() {
     var
       finished = this._finished;
-    this.stop();
+    this._finish();
     if (!finished) {
       this._notice('Page execution time:', Date.now() - this._startTime, 'ms');
       this.emit('exit', this.getResult());
     }
   },
+
   _exitOk: function() {
     if (this._finished) {
       return;
@@ -93,6 +97,7 @@ inherit(Page, EventEmitter, {
     }
     this._exit();
   },
+
   _exitFail: function() {
     if (this._finished) {
       return;
@@ -189,7 +194,7 @@ inherit(Page, EventEmitter, {
       var
         url = self.url;
 
-      if (self._abortedResources.indexOf(resourceError.id) != -1) {
+      if (self._abortedResources.indexOf(resourceError.id) != -1 || self._pageUrlMissedFragmentFixing) {
         return;
       }
 
@@ -200,7 +205,7 @@ inherit(Page, EventEmitter, {
         'Error code: ' + resourceError.errorCode + '.',
         'Description: ' + resourceError.errorString
       );
-      if (resourceError.url == url || (self._redirectUrl && resourceError.url == self._redirectUrl)) {
+      if (resourceError.url == url || self._redirectUrlList.indexOf(resourceError.url) != -1) {
         self._setNetworkReplyErrorCode(resourceError.errorCode);
       }
       self._resourceResponses[resourceError.id] = resourceError;
@@ -217,7 +222,7 @@ inherit(Page, EventEmitter, {
       var
         url = self.url;
 
-      if ( (!self.resourceFilter.check(requestData.url)) && requestData.url != url ) {
+      if ( (!self.resourceFilter.check(requestData.url)) && requestData.url != url && self._redirectUrlList.indexOf(requestData.url) == -1 ) {
         self._abortedResources.push(requestData.id);
         networkRequest.abort();
       }
@@ -234,15 +239,34 @@ inherit(Page, EventEmitter, {
 
     this.page.onResourceReceived = function(response) {
       var
-        url = self.url;
+        url = self.url,
+        status;
 
-      if (response.url == url || (self._redirectUrl && response.url == self._redirectUrl)) {
+      if (response.url == url || self._redirectUrlList.indexOf(response.url) != -1) {
         self._contentType = response.contentType;
-        if (response.redirectURL) {
-          self._redirectUrl = response.redirectURL;
+        if (response.stage == 'start') {
+          status = self._detectResourceUrlMissedFragment(response);
+          if (response.redirectURL) {
+            self._redirectUrlList.push(
+              status.detected
+                ? status.fixedRedirectUrl
+                : response.redirectURL
+            );
+          }
+          if (status.detected) {
+            self._resourceResponses[response.id] = response;
+            self._fixPageUrlMissedFragment(status.fixedRedirectUrl);
+            return;
+          }
         }
       }
-      self._resourceResponses[response.id] = response;
+
+      if (response.stage == 'end') {
+        self._resourceResponses[response.id] = response;
+        if (self.resourcesLogging && response.url) {
+          self._notice('Resource received:', response.id, response.url);
+        }
+      }
       self._pageReadyCheck();
     };
   },
@@ -299,6 +323,40 @@ inherit(Page, EventEmitter, {
       this._error('Could not evaluate js on page', this.url, e);
       this._exitFail();
     }
+  },
+
+  _detectResourceUrlMissedFragment: function(resource) {
+    var
+      result = {},
+      position,
+      fragment,
+      url = resource.url,
+      redirectUrl = resource.redirectURL,
+      fixedRedirectUrl;
+
+    if (url && redirectUrl) {
+      position = url.indexOf('#');
+      if (position != -1) {
+        fragment = url.slice(position);
+
+        result.detected = fragment.length > 1
+          ? redirectUrl.slice(-fragment.length) !== fragment
+          : false;
+
+        if (result.detected) {
+          position = redirectUrl.indexOf('#');
+          fixedRedirectUrl = position != -1
+            ? redirectUrl.slice(0, position)
+            : redirectUrl;
+          fixedRedirectUrl += fragment;
+
+          result.fixedRedirectUrl = fixedRedirectUrl;
+          result.redirectUrl = redirectUrl;
+        }
+      }
+    }
+
+    return result;
   },
 
   _webPageClearPersistentData: function() {
@@ -455,7 +513,7 @@ inherit(Page, EventEmitter, {
   _getReadyFlag: function() {
     try {
       return this.page.evaluate(function() {
-        return window.prerenderReady || window.impressReady;
+        return window.prerenderReady || window.impressReady || window.impresserReady;
       });
     }
     catch(e) {
@@ -468,7 +526,9 @@ inherit(Page, EventEmitter, {
   _hasReadyFlag: function() {
     try {
       return this.page.evaluate(function() {
-        return typeof window.prerenderReady != 'undefined' || typeof window.impressReady != 'undefined';
+        return typeof window.prerenderReady != 'undefined'
+          || typeof window.impressReady != 'undefined'
+          || typeof window.impresserReady != 'undefined';
       });
     }
     catch(e) {
@@ -490,18 +550,29 @@ inherit(Page, EventEmitter, {
     return null;
   },
 
-  stop: function() {
+  _fixPageUrlMissedFragment: function(fixedUrl) {
+    this._pageUrlMissedFragmentFixing = true;
+    this._pageUrlMissedFragmentRedirectUrl = fixedUrl;
+    this._stop();
+  },
+
+  _finish: function() {
     this._finished = true;
+    this._stop();
+  },
+
+  _stop: function() {
     this._cancelReadyCheckDelayTimeout();
     this._cancelTimeout();
     this._stopReadyFlagChecker();
     this.page.stop();
   },
 
-  open: function() {
+  open: function(url) {
     var
       self = this;
 
+    url = url || this.url;
     this._startTime = Date.now();
 
     try {
@@ -511,15 +582,25 @@ inherit(Page, EventEmitter, {
           this.page.clearMemoryCache();
         }
         catch(e) {
-          this._warning('Could not get clear memory cache for page', this.url, e);
+          this._warning('Could not get clear memory cache for page', url, e);
         }
       }
-      this.page.open(this.url, function(status) {
+      this._notice('Open', url);
+      this.page.open(url, function(status) {
+        if (self._pageUrlMissedFragmentFixing) {
+          self._pageUrlMissedFragmentFixing = false;
+          self._pageWindowLoaded = false;
+          self._resourceResponses = {};
+          self._abortedResources = [];
+          self.open(self._pageUrlMissedFragmentRedirectUrl);
+          return;
+        }
         if (status !== 'success') {
           self._error('Fail to load page');
           self._exitFail();
           return;
         }
+
         self._startReadyFlagChecker();
       });
     }
@@ -532,7 +613,7 @@ inherit(Page, EventEmitter, {
   getResult: function() {
     return {
       url: this.url,
-      redirectUrl: this._redirectUrl || null,
+      redirectUrlList: this._redirectUrlList,
       location: this._location || null,
       ok: this._ok,
       httpStatusCode: this._httpStatusCode,
@@ -555,7 +636,7 @@ inherit(Page, EventEmitter, {
 
   destroy: function() {
     this._destroyed = true;
-    this._redirectUrl = null;
+    this._redirectUrlList = null;
     this._httpHeaders = null;
     this._httpStatusCode = null;
     this._outputBuffer = null;
@@ -564,6 +645,8 @@ inherit(Page, EventEmitter, {
     this._noticeBuffer = null;
     this._resourceResponses = null;
     this._abortedResources = null;
+    this._pageUrlMissedFragmentRedirectUrl = null;
+    this._pageUrlMissedFragmentFixing = false;
     this.page.close();
   }
 
